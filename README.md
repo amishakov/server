@@ -8,6 +8,7 @@ You can use it to run the tutorial locally and translate it into your language.
 
 Windows, Unix systems and macOS are supported. For Windows, you'll need to call scripts with ".cmd" extension, that are present in the code alongside with Unix versions.
 
+
 # Installation
 
 1. Install [Git](https://git-scm.com/downloads) and [Node.js](https://nodejs.org).
@@ -15,9 +16,7 @@ Windows, Unix systems and macOS are supported. For Windows, you'll need to call 
     These are required to update and run the project.
     For Windows just download and install, otherwise use standard OS install tools (packages or whatever convenient).
 
-    Please use Node.js 10+.
-
-    (Maybe later, optional) If you're going to change images, please install [ImageMagick](https://imagemagick.org/script/download.php).
+    (Maybe later, optional) If you're going to change images, please install [ImageMagick](https://imagemagick.org/script/download.php), use packages for Linux or homebrew/macports for MacOS.
 
 2. Install global Node modules:
 
@@ -27,8 +26,8 @@ Windows, Unix systems and macOS are supported. For Windows, you'll need to call 
 
 3. Create the root folder.
 
-    Create a folder `/js` for the project. 
-    
+    Create a folder `/js` for the project.
+
     You can also use another directory as the root, then change the paths below: replace `/js` with your root.
 
 4. Clone the tutorial server into it:
@@ -40,15 +39,15 @@ Windows, Unix systems and macOS are supported. For Windows, you'll need to call 
     ```
 
     Please note, there are two clone commands. That's not a typo: `modules/engine` is cloned from another repository.
-    
-    And please don't forget this when updating, `modules/engine` needs to be fetched and merged too.
+
+    And please don't forget when pulling an updated server code: `modules/engine` needs to be pulled too.
 
 5. Clone the tutorial text into it.
 
-    The repository starts with the language code, e.g for the French version `fr.javascript.info`, for Russian – `ru.javascript.info` etc.
+    The repository starts with the language code, e.g for the French version `fr.javascript.info`, for Russian – `ru.javascript.info`, for Chinese `zh.javascript.info` etc.
 
     The English version is `en.javascript.info`.
-    
+
     The tutorial text repository should go into the `repo` subfolder, like this:
 
     ```bash
@@ -122,13 +121,23 @@ Please note, the server must support that language. There must be corresponding 
 
 Please don't translate SVG files manually.
 
-They are auto-generated from the English variant, with the text phrases substituted from `images.yml` file in the repository root, such as <https://github.com/javascript-tutorial/ru.javascript.info/blob/master/images.yml>. 
+They are auto-generated from the English variant, with the text phrases substituted from `images.yml` file in the repository root, such as <https://github.com/javascript-tutorial/ru.javascript.info/blob/master/images.yml>.
 
 So you need to translate the content of `images.yml` and re-generate the SVGs using a script.
 
 Here are the steps to translate images.
 
-**Step 1.** Create `images.yml` with translations in the repository root.
+**Step 1.** Setup git upstream (if you haven't yet) and pull latest changes from English version:
+
+```bash
+cd /js/server/repo/zh.javascript.info # in the tutorial folder
+
+git remote add upstream https://github.com/javascript-tutorial/en.javascript.info
+
+git fetch upstream master
+```
+
+**Step 2.** Create `images.yml` with translations in the repository root.
 
 An example of such file (in Russian): https://github.com/javascript-tutorial/ru.javascript.info/blob/master/images.yml
 
@@ -141,25 +150,78 @@ code-style.svg:  # image file name
   "No space":    # English string
     text: "Без пробелов" # translation
     position: "center" # (optional) "center" or "right" - to position the translated string
+  "between the function name and parentheses":
+    position: "center"
+    text: "между именем функции и скобками"
 ```
 
-As you can see, for each image file (such as `code-style.svg`), there go English phrases (such as `"No space"`).
+As you can see, for each image file there's a name (such as `code-style.svg`), and then goes the list of its English phrases (such as `"No space"`), accompanied by translations:
 
-For each phrase, there's the translated `text` and the text `position` (not always needed, details will come soon).
+- `text` is the translated text
+- `position` (not always needed, details will come soon) is the relative position of the text.
 
-You can make a small file with only one image for the start. 
+Initially, the file may be empty, then you can fill it with images one by one.
 
-**Step 2.** Setup git upstream (if you haven't yet) and pull latest changes from English version:
+Only the mentioned images will be translated.
+
+**Step 3.** Use the helper script to get a list of strings to translate:
+
+The script is executed from the server root, like this:
 
 ```bash
-cd /js/server/repo/zh.javascript.info # in the tutorial folder
+# Adjust NODE_LANG to your language
 
-git remote add upstream https://github.com/javascript-tutorial/en.javascript.info
-
-git fetch upstream master
+❯ NODE_LANG=zh npm run gulp -- engine:koa:tutorial:imageYaml --image code-style.svg
 ```
 
-**Step 3.** Run the translation task:
+Here's an example of its output:
+
+```yml
+code-style.svg:
+  '2': ''
+  No space: ''
+  between the function name and parentheses: ''
+  between the parentheses and the parameter: ''
+  Indentation: ''
+  2 spaces: ''
+  'A space ': ''
+  after for/if/while…: ''
+  '} else { without a line break': ''
+  Spaces around a nested call: ''
+  An empty line: ''
+  between logical blocks: ''
+  Lines are not very long: ''
+  A semicolon ;: ''
+  is mandatory: ''
+  Spaces: ''
+  around operators: ''
+  Curly brace {: ''
+  on the same line, after a space: ''
+  A space: ''
+  between: ''
+  arguments: ''
+  A space between parameters: ''
+```
+
+As we can see, the script returns a text snippet that can be inserted into `images.yml` fully or partially.
+
+E.g. like this:
+
+```yml
+code-style.svg:
+  'A space ': 'Пробел'
+```
+
+Or like this, if we want to position the translation in the center (see below for more examples):
+
+```yml
+code-style.svg:
+  'A space ':
+    position: 'center'
+    text: 'Пробел'
+```
+
+**Step 4.** Run the translation task:
 
 ```bash
 cd /js/server # in the server folder
@@ -171,7 +233,7 @@ NODE_LANG=zh npm run gulp -- engine:koa:tutorial:figuresTranslate
 
 This script checks out all SVG images from `upstream` (English version) and replaces the strings inside them according to `images.yml`. So they become translated.
 
-The new translated SVGs are the tutorial folder now, but not committed yet. 
+The new translated SVGs are the tutorial folder now, but not committed yet.
 
 You can see them with `git status`.
 
@@ -179,7 +241,7 @@ Take a moment to open and check them, e.g. in Chrome browser, just to ensure tha
 
 P.S. If an image appears untranslated on refresh, force the browser to "reload without cache" ([hotkeys](https://en.wikipedia.org/wiki/Wikipedia:Bypass_your_cache#Bypassing_cache)).
 
-**Step 4.** Then you'll need to `git add/commit/push` the translated SVGs, as a part of the normal translation flow. 
+**Step 5.** Then you'll need to `git add/commit/push` the translated SVGs, as a part of the normal translation flow.
 
 ...And voilà! SVGs are translated!
 
@@ -190,8 +252,11 @@ P.S. If an image appears untranslated on refresh, force the browser to "reload w
 > NODE_LANG=zh npm run gulp -- engine:koa:tutorial:figuresTranslate --image try-catch-flow.svg
 > ```
 
+Read on for more advanced options and troubleshooting.
 
 ## Positioning
+
+> For the positioning to work, sure you have installed [ImageMagick](https://imagemagick.org/script/download.php) mentioned in the [installation](#installation) step.
 
 By default, the translated string replaces the original one, starting in exactly the same place of the image.
 
@@ -204,7 +269,7 @@ Before the translation:
 After the translation (`你` is at the same place where `h` was, the string is left-aligned):
 
 ```
-| 你好世界    
+| 你好世界
 ```
 
 Sometimes that's not good, e.g. if the string needs to be centered, e.g. like this:
@@ -215,7 +280,7 @@ hello world
      |
 ```
 
-(The "hello world" is centered between two `|`).
+Here, the "hello world" is centered between two vertical lines `|`.
 
 Then, if we just replace the string, it would become:
 
@@ -225,9 +290,9 @@ Then, if we just replace the string, it would become:
      |
 ```
 
-As we can see, the new phrase is shorter. We should move it to the right a bit. 
+As we can see, the new phrase is shorter. We should move it to the right a bit.
 
-The `position: "center"` in `images.yml` does exactly that. 
+The `position: "center"` in `images.yml` does exactly that.
 
 It centers the translated string, so that it will replace the original one and stay "in the middle" of the surrounding context.
 
@@ -246,29 +311,27 @@ hello world |
 
 That's also useful for images when we expect the text to stick to the right.
 
-P.S In order for positioning to work, you need to have ImageMagick installed: <https://imagemagick.org/script/download.php> (or use packages for Linux or homebrew/macports for MacOS).
-
-## Helper script: extract strings
-
-The task to get all strings from an image as YAML (for translation, to add to `images.yml`):
-
-```bash
-cd /js/server # in the server folder
-
-NODE_LANG=zh npm run gulp -- engine:koa:tutorial:imageYaml --image code-style.svg
-```
-
-It extracts all text lines. Useful for debugging, when the translation doesn't "catch up", because the SVG text has an extra space or so.
 
 ## The "overflowing text" problem
 
-The replacement script only operates on strings, not other graphics, so a long translated string may not fit the picture. 
+The replacement script only operates on strings, not other graphics, so a long translated string may not fit the picture.
 
-Most pictures have some extra space for longer text, so a slight increase doesn't harm. 
+Most pictures have some extra space for longer text, so a slight increase doesn't harm.
 
-If the translated text is much longer, please try to change it, make it shorter to fit. 
+If the translated text is much longer, please try to change it, make it shorter to fit.
 
 If the translated text absolutely must be longer and doesn't fit, let me know, we'll see how to adjust the picture.
+
+## Troubleshooting images translation
+
+If you add a translation to `images.yml`, but after running the script the SVG remains the same, so that the translation doesn't "catch up":
+
+1. Ensure that you have the latest server code and translation repos, fetched the upstream.
+2. Check if the English version has the file with the same name. The file could have been renamed.
+3. Check that there's only 1 file with the given name in the tutorial. Sometimes there may be duplicates.
+4. Check that the translated string in `images.yml` is exactly as in SVG: use the helper script (Step 3) to extract all strings.
+
+If it still doesn't work – [file an issue](https://github.com/javascript-tutorial/server/issues/new).
 
 # Dev mode
 
@@ -332,4 +395,3 @@ $> sudo sysctl -p
 It is very important that you refer to the documentation for your operating system to change this parameter permanently.
 
 --<br>Yours,<br>Ilya Kantor<br>iliakan@javascript.info
-
